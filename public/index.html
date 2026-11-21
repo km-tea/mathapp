@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>아침 수학</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+:root{--board:#23473b;--board2:#1a352c;--chalk:#f0c24b;--paper:#f3f5f2;--card:#fff;--ink:#1d2b26;--mute:#66736d;--line:#d9dfda;--ok:#2f7d4f;--bad:#b3402f;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--paper:#14201b;--card:#1d2c26;--ink:#e9efe9;--mute:#9db0a7;--line:#33463e;--board:#1a352c;--board2:#102620;--ok:#6cc08c;--bad:#e8806e;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.6 "Noto Sans KR",system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+header{background:var(--board);color:#f4f6f1;padding:14px 20px;display:flex;align-items:center;gap:14px;border-bottom:4px solid var(--chalk)}
+header h1{margin:0;font-size:20px;flex:1}
+header span{color:#cfe0d6;font-size:14px}
+main{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+nav{display:flex;gap:4px;margin-bottom:18px;border-bottom:2px solid var(--line)}
+nav button{background:none;border:0;padding:10px 16px;font:inherit;color:var(--mute);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+nav button[aria-selected=true]{color:var(--ink);font-weight:700;border-color:var(--board)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:14px}
+h2{font-size:18px;margin:0 0 12px}
+input,textarea,select{font:inherit;width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+textarea{min-height:120px}
+label{display:block;font-size:14px;color:var(--mute);margin:12px 0 4px}
+button.b{font:inherit;font-weight:700;padding:10px 18px;border:0;border-radius:8px;background:var(--board);color:#fff;cursor:pointer}
+button.b.alt{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+button.b.warn{background:var(--bad)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--chalk);outline-offset:1px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.lv{display:flex;gap:10px;flex-wrap:wrap}
+.lv button{flex:1;min-width:150px;padding:14px;text-align:left;font:inherit;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer}
+.lv button:hover{border-color:var(--board)}
+.lv b{display:block;font-size:20px}
+.lv small{color:var(--mute)}
+.q{border-left:5px solid var(--board);padding-left:14px;margin:0 0 22px}
+.q .no{font-weight:700;color:var(--mute);font-size:14px}
+.q .ans{display:flex;align-items:center;gap:8px;margin-top:10px;max-width:320px}
+.q .hint{font-size:13px;color:var(--mute)}
+.opt{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;cursor:pointer}
+.opt:hover{background:var(--paper)}
+.opt input{width:auto}
+.ok{color:var(--ok);font-weight:700}.bad{color:var(--bad);font-weight:700}
+.q.right{border-color:var(--ok)}.q.wrong{border-color:var(--bad)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left}
+tr.click{cursor:pointer}tr.click:hover{background:var(--paper)}
+.score{font-size:40px;font-weight:700;margin:0}
+.msg{padding:10px 12px;border-radius:8px;background:var(--paper);margin:10px 0;font-size:15px}
+.empty{color:var(--mute);text-align:center;padding:30px 10px}
+.seg{display:flex;margin-bottom:14px}
+.seg button{flex:1;padding:10px;font:inherit;border:1.5px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.seg button:first-child{border-radius:8px 0 0 8px}.seg button:last-child{border-radius:0 8px 8px 0}
+.seg button[aria-pressed=true]{background:var(--board);color:#fff;border-color:var(--board)}
+</style>
+</head>
+<body>
+<header><h1>아침 수학</h1><span id="who"></span><button class="b alt" id="out" hidden style="color:#fff;border-color:#6f8c80">로그아웃</button></header>
+<main id="app"></main>
+<script>
+const $ = (s) => document.querySelector(s), app = $('#app');
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const CIRC = '①②③④⑤';
+let S = { token: null, role: null, name: '' }, tab = '', Q = null, flash = '';
+try { S = JSON.parse(localStorage.getItem('ma') || 'null') || S; } catch (e) {}
+const save = () => { try { localStorage.setItem('ma', JSON.stringify(S)); } catch (e) {} };
+
+async function api(path, body) {
+  const r = await fetch('/api/' + path, { method: body ? 'POST' : 'GET', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (S.token || '') }, body: body ? JSON.stringify(body) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { if (r.status === 401 && S.token) logout(); throw new Error(d.error || '오류가 발생했습니다.'); }
+  return d;
+}
+function logout() { S = { token: null, role: null, name: '' }; save(); tab = ''; Q = null; render(); }
+$('#out').onclick = logout;
+const fmt = (a) => { a = String(a); let m; if ((m = a.match(/^(\d+)\/(\d+)$/))) return `$\\frac{${m[1]}}{${m[2]}}$`; return esc(a); };
+const when = (t) => t ? new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '-';
+const math = () => window.renderMathInElement && renderMathInElement(document.body, { delimiters: [{ left: '$', right: '$', display: false }], throwOnError: false });
+const show = (html) => { app.innerHTML = html; math(); };
+const nav = (items) => `<nav role="tablist">${items.map(([k, v]) => `<button role="tab" aria-selected="${tab === k}" data-tab="${k}">${v}</button>`).join('')}</nav>`;
+const qBody = (q, i, v = '') => `<div class="no">${i}번${q.level ? ' · ' + esc(q.level) : ''}</div><div>${q.q}</div>` + (q.type === 'mc'
+  ? q.choices.map((c, k) => `<label class="opt"><input type="radio" name="a-${q.id}" value="${k + 1}"> <span>${CIRC[k]}</span> <span>${c}</span></label>`).join('')
+  : `<div class="ans"><input data-a="${q.id}" autocomplete="off" inputmode="text" aria-label="${i}번 답" placeholder="예: 3/5, 1 2/3, 0.6" value="${esc(v)}">${q.suffix ? `<span>${esc(q.suffix)}</span>` : ''}</div>`);
+const readAns = (id) => { const r = document.querySelector(`input[name="a-${id}"]:checked`); return r ? r.value : (document.querySelector(`[data-a="${id}"]`)?.value ?? ''); };
+const showAns = (q) => q.type === 'mc' ? CIRC[q.answer - 1] : fmt(q.answer) + (q.suffix ? ' ' + esc(q.suffix) : '');
+
+// ───── 로그인 ─────
+let who = 'student', tReg = null;
+async function login() {
+  if (who === 'teacher' && tReg === null) { try { tReg = (await api('teacher/status')).registered; } catch (e) { tReg = true; } }
+  const reg = who === 'teacher' && tReg === false;
+  show(`<div class="card" style="max-width:420px;margin:40px auto"><div class="seg"><button data-who="student" aria-pressed="${who === 'student'}">학생</button><button data-who="teacher" aria-pressed="${who === 'teacher'}">교사</button></div>
+  <h2>${who === 'student' ? '학생 로그인' : reg ? '교사 최초 가입' : '교사 로그인'}</h2>
+  <label for="u">아이디</label><input id="u" autocomplete="username" autocapitalize="off">
+  ${reg ? '<label for="c">가입 코드</label><input id="c" autocomplete="off">' : ''}
+  <label for="p">${reg ? '사용할 비밀번호 (6자 이상)' : '비밀번호'}</label><input id="p" type="password" autocomplete="current-password">
+  <p class="bad" id="err" role="alert">${esc(flash)}</p>
+  <button class="b" id="go" style="width:100%">${reg ? '가입하고 시작하기' : '로그인'}</button></div>`);
+  const go = async () => {
+    try {
+      const d = who === 'student' ? await api('student/login', { username: $('#u').value.trim(), password: $('#p').value })
+        : reg ? await api('teacher/register', { id: $('#u').value.trim(), code: $('#c').value.trim(), password: $('#p').value })
+        : await api('teacher/login', { id: $('#u').value.trim(), password: $('#p').value });
+      S = { token: d.token, role: who, name: d.name }; save(); flash = ''; tab = ''; render();
+    } catch (e) { $('#err').textContent = e.message; }
+  };
+  $('#go').onclick = go; $('#p').onkeydown = (e) => e.key === 'Enter' && go();
+}
+
+// ───── 학생 ─────
+async function student() {
+  tab ||= 'solve';
+  const head = nav([['solve', '문제 풀기'], ['wrong', '오답 복습'], ['hist', '내 기록']]);
+  if (Q) return quiz();
+  try {
+    if (tab === 'solve') {
+      const units = await api('student/units');
+      show(head + units.map((u) => `<div class="card"><h2>${esc(u.name)}</h2><div class="lv">${[['하', 10], ['중', 8], ['상', 5]].map(([l, n]) => `<button data-start="${u.unit}|${l}" ${u.levels[l] ? '' : 'disabled'}><b>${l}</b><small>${n}문제</small></button>`).join('')}</div></div>`).join('') || '<p class="empty">아직 문제가 없습니다.</p>');
+    } else if (tab === 'wrong') {
+      const w = await api('student/wrong');
+      show(head + `<div class="msg">틀린 문제를 다시 풀어 맞히면 이 목록에서 사라집니다.</div>` + (w.map((q, i) => `<div class="card q" data-wid="${q.id}">${qBody(q, i + 1).replace(`${i + 1}번 · ${esc(q.level)}`, `${esc(q.unitName)} · ${esc(q.level)}`)}<div class="row" style="margin-top:10px"><button class="b" data-recheck="${q.id}">정답 확인</button><span class="r"></span></div></div>`).join('') || '<p class="empty">복습할 오답이 없어요. 잘하고 있어요!</p>'));
+    } else {
+      const h = await api('student/history');
+      show(head + (h.length ? `<div class="card"><table><tr><th>날짜</th><th>단원</th><th>난이도</th><th>점수</th></tr>${h.map((x) => `<tr><td>${when(x.created_at)}</td><td>${esc(x.unitName)}</td><td>${x.level}</td><td>${x.score} / ${x.total}</td></tr>`).join('')}</table></div>` : '<p class="empty">아직 푼 기록이 없습니다.</p>'));
+    }
+  } catch (e) { show(`<p class="bad">${esc(e.message)}</p>`); }
+}
+function quiz() {
+  show(`<div class="card"><h2>${esc(Q.name)} · ${Q.level}</h2>${Q.questions.map((q, i) => `<div class="q">${qBody(q, i + 1)}</div>`).join('')}<div class="row"><button class="b" id="sub">제출하기</button><button class="b alt" id="quit">그만두기</button></div></div>`);
+}
+async function submit() {
+  const answers = Object.fromEntries(Q.questions.map((q) => [q.id, readAns(q.id)]));
+  const blank = Object.values(answers).filter((v) => v === '').length;
+  if (blank && !confirm(`비워 둔 문제가 ${blank}개 있어요. 그래도 제출할까요?`)) return;
+  try {
+    const r = await api('student/submit', { attemptId: Q.attemptId, answers }), name = Q.name; Q = null;
+    show(`${nav([['solve', '문제 풀기'], ['wrong', '오답 복습'], ['hist', '내 기록']])}<div class="card"><p class="score">${r.score} / ${r.total}</p>
+    ${r.results.map((x, i) => `<div class="q ${x.correct ? 'right' : 'wrong'}"><div class="no">${i + 1}번 · <span class="${x.correct ? 'ok' : 'bad'}">${x.correct ? '정답' : '오답'}</span></div><div>${x.q.q}</div>${x.q.type === 'mc' ? `<div>${x.q.choices.map((c, k) => `${CIRC[k]} ${c}`).join('　')}</div>` : ''}
+      <div class="hint">내 답: ${x.given === '' ? '(비움)' : x.q.type === 'mc' ? CIRC[x.given - 1] : fmt(x.given)}${x.correct ? '' : ` · 정답: ${showAns(x.q)}`}</div></div>`).join('')}
+    <button class="b" data-tab="solve">다른 문제 풀기</button></div>`);
+  } catch (e) { alert(e.message); }
+}
+
+// ───── 교사 ─────
+async function teacher() {
+  tab ||= 'stu';
+  const head = nav([['stu', '학생 관리'], ['res', '학습 결과']]);
+  try {
+    const list = await api('teacher/students');
+    if (tab === 'stu') {
+      show(head + `<div class="card"><h2>학생 계정 만들기</h2><label for="lines">한 줄에 한 명씩: 이름,아이디,비밀번호 (같은 아이디는 비밀번호가 새로 바뀝니다)</label>
+      <textarea id="lines" placeholder="김하늘,hana01,1234&#10;이바다,sea02,5678"></textarea><div class="row" style="margin-top:10px"><button class="b" id="mk">계정 만들기</button><span id="mm"></span></div></div>
+      <div class="card"><h2>학생 목록 (${list.length}명)</h2>${list.length ? `<table><tr><th>이름</th><th>아이디</th><th></th></tr>${list.map((s) => `<tr><td>${esc(s.name)}</td><td>${esc(s.username)}</td><td><button class="b alt" data-del="${s.id}" data-n="${esc(s.name)}">삭제</button></td></tr>`).join('')}</table>` : '<p class="empty">아직 학생이 없습니다.</p>'}</div>
+      <div class="card"><h2>문제은행</h2><button class="b alt" id="sync">문제은행 새로고침</button> <span id="sm" class="hint"></span></div>`);
+    } else {
+      show(head + `<div class="card"><h2>학생별 결과</h2>${list.length ? `<table><tr><th>이름</th><th>푼 횟수</th><th>평균</th><th>최근</th></tr>${list.map((s) => `<tr class="click" data-detail="${s.id}"><td>${esc(s.name)}</td><td>${s.tries}</td><td>${s.avg ?? '-'}${s.avg != null ? '점' : ''}</td><td>${when(s.last)}</td></tr>`).join('')}</table>` : '<p class="empty">학생 계정을 먼저 만들어 주세요.</p>'}</div><div id="detail"></div>`);
+    }
+  } catch (e) { show(`<p class="bad">${esc(e.message)}</p>`); }
+}
+async function detail(id) {
+  const d = await api('teacher/detail?id=' + id), box = $('#detail');
+  box.innerHTML = `<div class="card"><h2>푼 기록</h2>${d.attempts.length ? `<table><tr><th>날짜</th><th>단원</th><th>난이도</th><th>점수</th></tr>${d.attempts.map((x) => `<tr><td>${when(x.created_at)}</td><td>${esc(x.unitName)}</td><td>${x.level}</td><td>${x.score} / ${x.total}</td></tr>`).join('')}</table>` : '<p class="empty">기록이 없습니다.</p>'}</div>
+  <div class="card"><h2>틀린 문항</h2>${d.wrong.map((w) => `<div class="q wrong"><div>${w.body.q}</div><div class="hint">학생 답: ${w.body.type === 'mc' ? CIRC[w.given - 1] || '-' : fmt(w.given || '(비움)')} · 정답: ${showAns(w.body)} · ${w.resolved ? '<span class="ok">복습 완료</span>' : '복습 전'}</div></div>`).join('') || '<p class="empty">틀린 문항이 없습니다.</p>'}</div>`;
+  math(); box.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ───── 이벤트 ─────
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('button,tr.click'); if (!t) return; const d = t.dataset;
+  if (d.who) { who = d.who; flash = ''; login(); }
+  else if (d.tab) { tab = d.tab; Q = null; render(); }
+  else if (d.start) {
+    const [unit, level] = d.start.split('|');
+    try { const r = await api('student/start', { unit, level }); Q = { ...r, level, name: t.closest('.card').querySelector('h2').textContent }; render(); } catch (er) { alert(er.message); }
+  }
+  else if (t.id === 'sub') submit();
+  else if (t.id === 'quit') { if (confirm('지금까지 푼 내용은 저장되지 않아요. 그만둘까요?')) { Q = null; render(); } }
+  else if (d.recheck) {
+    const id = d.recheck, card = t.closest('.card'), out = card.querySelector('.r');
+    try { const r = await api('student/wrong-check', { id, given: readAns(id) });
+      if (r.correct) { out.innerHTML = '<span class="ok">정답! 목록에서 지웁니다.</span>'; setTimeout(() => card.remove(), 900); }
+      else out.innerHTML = '<span class="bad">다시 생각해 보세요.</span>'; } catch (er) { out.textContent = er.message; }
+  }
+  else if (t.id === 'mk') {
+    try { const r = await api('teacher/students', { lines: $('#lines').value }); await teacher(); $('#mm').textContent = `${r.ok}명 저장${r.bad.length ? `, 형식 오류 ${r.bad.length}줄` : ''}`; } catch (er) { $('#mm').textContent = er.message; }
+  }
+  else if (d.del) { if (confirm(`${d.n} 학생과 학습 기록을 모두 삭제할까요?`)) { await api('teacher/student-delete', { id: d.del }); teacher(); } }
+  else if (t.id === 'sync') { try { const r = await api('teacher/sync-bank', {}); $('#sm').textContent = `문제 ${r.count}개 반영됨`; } catch (er) { $('#sm').textContent = er.message; } }
+  else if (d.detail) detail(d.detail);
+});
+function render() {
+  $('#who').textContent = S.token ? `${S.name}${S.role === 'student' ? ' 학생' : ''}` : '';
+  $('#out').hidden = !S.token;
+  if (!S.token) login(); else if (S.role === 'student') student(); else teacher();
+}
+render(); addEventListener('load', math);
+</script>
+</body>
+</html>
