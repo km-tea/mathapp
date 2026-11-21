@@ -107,7 +107,8 @@ async function login() {
       S = { token: d.token, role: who, name: d.name }; save(); flash = ''; tab = ''; render();
     } catch (e) { $('#err').textContent = e.message; }
   };
-  $('#go').onclick = go; $('#p').onkeydown = (e) => e.key === 'Enter' && go();
+  $('#go').onclick = go;
+  app.querySelectorAll('input').forEach((el) => el.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); }));
 }
 
 // ───── 학생 ─────
